@@ -31,6 +31,7 @@ def benchmark_torchsnapshot(work_dir: str, gpu_tensor: torch.Tensor) -> None:
             tensor=gpu_tensor,
         )
     }
+    # os.path.join(work_dir, uuid.uuid4())
     snapshot = Snapshot.take(path=f"{work_dir}/{uuid.uuid4()}", app_state=app_state)
 
     ts_begin = time.monotonic()
@@ -79,6 +80,9 @@ def benchmark_torch_save_fsspec(work_dir: str, gpu_tensor: torch.Tensor) -> None
         f"Peak RSS delta: {max(rss_deltas) // 1024**2}MB"
     )
 
+def tensor_memory_size(tensor: torch.Tensor) -> int:
+    """Compute the in-memory size of a PyTorch tensor."""
+    return tensor.element_size() * tensor.numel()
 
 if __name__ == "__main__":
     with tempfile.TemporaryDirectory() as path:
@@ -88,5 +92,7 @@ if __name__ == "__main__":
 
         device = torch.device("cuda:0")
         gpu_tensor = torch.rand(*TENSOR_DIMS, device=device)
+        print(f"{tensor_memory_size(gpu_tensor) / 2**30:.2f} GB")
+
         benchmark_torch_save_fsspec(work_dir=args.work_dir, gpu_tensor=gpu_tensor)
         benchmark_torchsnapshot(work_dir=args.work_dir, gpu_tensor=gpu_tensor)
